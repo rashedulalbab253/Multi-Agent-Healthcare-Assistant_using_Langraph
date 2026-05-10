@@ -160,3 +160,28 @@ docker-compose down
 ```
 
 > **Note:** The first run will take a few minutes to download the model (~2.5 GB). The model is persisted in a Docker volume so subsequent starts are instant.
+
+---
+
+## 🔄 CI/CD — GitHub Actions
+
+Every push to `main` automatically builds the Docker image and pushes it to Docker Hub.
+
+**Image:** [`rashedulalbab1234/multi-agent-healthcare-assistant`](https://hub.docker.com/r/rashedulalbab1234/multi-agent-healthcare-assistant)
+
+### Setup Required Secrets
+
+Go to your GitHub repo → **Settings → Secrets and variables → Actions** and add:
+
+| Secret Name | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | `rashedulalbab1234` |
+| `DOCKERHUB_TOKEN` | Your Docker Hub access token |
+
+> To create a Docker Hub access token, go to [Docker Hub → Account Settings → Security → New Access Token](https://hub.docker.com/settings/security).
+
+### Pull the pre-built image
+
+```bash
+docker pull rashedulalbab1234/multi-agent-healthcare-assistant:latest
+```
