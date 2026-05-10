@@ -60,7 +60,26 @@ The app is monitored using LangSmith (optional).
 
 ---
 
-## 📦 Installation
+## ⚡ Quick Start
+
+```bash
+# 1. Install Ollama → https://ollama.com
+
+# 2. Pull the model
+ollama pull medgemma
+
+# 3. Install Python deps
+pip install -r requirements.txt
+
+# 4. Run the app
+uvicorn app.main:app --reload
+
+# 5. Open in browser → http://localhost:8000
+```
+
+---
+
+## 📦 Installation (Detailed)
 
 ### 1. Install Ollama
 
