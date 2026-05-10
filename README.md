@@ -24,7 +24,7 @@ This project is a modular FastAPI-based application designed to simulate a real-
 
 The user input goes through the router agent. The router agent analyzes the input, and routes the input to either icd10 code generation agent, soap generation agent or image analysis agent.
 
-All the agents use MedGemma model as the LLM. The LLM is run locally. In order to reduce the latency of the app, a quantized model is used. 
+All the agents use MedGemma model as the LLM. The LLM is run locally via **Ollama**. In order to reduce the latency and memory usage, a quantized model is used. 
 
 
 Here is an architecture diagram:
@@ -46,50 +46,79 @@ Watch a quick demo of the Multi-Agent Medical System in action:
 ## 📊 Monitoring
 
 
-The app is monitored using LangSmith.
+The app is monitored using LangSmith (optional).
 
 ![Langgraph Runs](artifacts/runs.png)
 
 ---
 ## 📝 Requirements
 
-The current version of the app is using [mlx- version](https://huggingface.co/mlx-community/medgemma-4b-it-4bit) of medgemma model. The app is run locally on a machine with 48 GB RAM and Apple M4 Max chip. 
+- **OS**: Windows, macOS, or Linux
+- **RAM**: 8 GB minimum (the quantized 4B model uses ~3 GB)
+- **Ollama**: Download from [https://ollama.com](https://ollama.com)
+- **Python**: 3.11+
 
 ---
 
 ## 📦 Installation
 
-### 1. Clone the repo
+### 1. Install Ollama
+
+Download and install Ollama from [https://ollama.com](https://ollama.com).
+
+After installation, pull the MedGemma model:
+```bash
+ollama pull medgemma
+```
+
+> **Note:** The model will be automatically downloaded (~2.5 GB) on first use if you skip this step.
+
+### 2. Clone the repo
 
 ```bash
 git clone https://github.com/joyceannie/Multi_Agent_Medical_System.git
 cd Multi_Agent_Medical_System
 ```
 
-### 2. Setup Python environment
+### 3. Setup Python environment
 ```bash
-python3.11 -m venv venv
-source venv/bin/activate
+python -m venv venv
+
+# Windows:
+venv\Scripts\activate
+
+# macOS/Linux:
+# source venv/bin/activate
+
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Setup .env file in the root directory with the following format
+### 4. Setup .env file (Optional — for LangSmith monitoring)
+Create a `.env` file in the root directory:
 ```bash
-LANGSMITH_TRACING="true"
-LANGSMITH_ENDPOINT="<your-langsmith-endpoint>"
-LANGSMITH_API_KEY="your-langsmith-api-key"
-LANGSMITH_PROJECT="your-langsmit-project"
+LANGCHAIN_TRACING_V2="true"
+LANGCHAIN_ENDPOINT="<your-langsmith-endpoint>"
+LANGCHAIN_API_KEY="your-langsmith-api-key"
+LANGCHAIN_PROJECT="your-langsmith-project"
 ```
 
+> If you don't need LangSmith monitoring, you can skip this step. The app will work without it.
 
-### 4. Run the app
+### 5. Start Ollama
+Make sure Ollama is running before starting the app:
+```bash
+ollama serve
 ```
+
+> On Windows, Ollama usually runs as a background service automatically after installation.
+
+### 6. Run the app
+```bash
 uvicorn app.main:app --reload
 ```
 
-Goto http://localhost/8000 and interact with the app.
-
+Go to http://localhost:8000 and interact with the app.
 
 
 

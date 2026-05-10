@@ -1,43 +1,39 @@
 from app.agents.base_agent import BaseAgent
-from app.utils.model_loader import load_medgemma_model
 from app.utils.prompt_builder import build_icd10_prompt
 from app.graph.types import State
 from app.utils.logger import get_logger
 from app.utils.helper import clean_json_response
+from app.utils.predictor import generate_response
 import json
 from PIL import Image
 from typing import Optional
 from langsmith.run_helpers import traceable
-from mlx_vlm.prompt_utils import apply_chat_template
-from mlx_vlm import generate
-import numpy as np
 
 logger = get_logger(__name__)
 
 class ICD10Agent(BaseAgent):
     def __init__(self):
         super().__init__(name="ICD10Agent")
-        self.model, self.processor, self.config = load_medgemma_model()
 
     @traceable
     def respond(self, state: State) -> str:
 
         logger.info(f"Called respond with state: {state}")
         clinical_note = state.payload["clinical_note"] if "clinical_note" in state.payload else None
-        image = [state.payload["image"] if "image" in state.payload else  Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))] 
+        image = state.payload.get("image", None)
 
-        prompt = build_icd10_prompt(clinical_note, image)
-        formatted_prompt = apply_chat_template(
-            self.processor, self.config, prompt, num_images=1
-        )
+        prompt = build_icd10_prompt(clinical_note)
+        
+        # Pass images list if image exists
+        images = [image] if image else None
         logger.info(f"Generating ICD-10 codes for clinical note: {clinical_note}")
-        return generate(self.model, self.processor, formatted_prompt, image)
+        return generate_response(prompt, images)
     
 
     def run(self, state: State) -> State:
         logger.info("Running ICD10Agent with state: %s", state)
         try:
-            raw_result = self.respond(state).text
+            raw_result = self.respond(state)
             logger.info("ICD10Agent response: %s", raw_result)
             parsed_result = clean_json_response(raw_result)
             cleaned_result = json.loads(parsed_result)
@@ -69,7 +65,7 @@ class ICD10Agent(BaseAgent):
 
 #     Physical Exam:
 #     - Rebound tenderness in the right lower quadrant
-#     - Positive Rovsing’s sign
+#     - Positive Rovsing's sign
 #     - No palpable masses
 
 #     Diagnosis:
