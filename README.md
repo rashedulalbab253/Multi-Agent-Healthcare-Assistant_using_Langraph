@@ -76,8 +76,8 @@ ollama pull medgemma
 ### 2. Clone the repo
 
 ```bash
-git clone https://github.com/joyceannie/Multi_Agent_Medical_System.git
-cd Multi_Agent_Medical_System
+git clone https://github.com/rashedulalbab253/Multi-Agent-Healthcare-Assistant_using_Langraph.git
+
 ```
 
 ### 3. Setup Python environment
