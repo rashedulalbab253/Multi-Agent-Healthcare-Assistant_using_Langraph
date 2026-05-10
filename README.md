@@ -139,5 +139,24 @@ uvicorn app.main:app --reload
 
 Go to http://localhost:8000 and interact with the app.
 
+---
 
+## 🐳 Docker
 
+Run everything with a single command using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This will:
+1. Start the **Ollama** container and auto-pull the `medgemma` model
+2. Start the **FastAPI** app container
+3. Expose the app at **http://localhost:8000**
+
+To stop:
+```bash
+docker-compose down
+```
+
+> **Note:** The first run will take a few minutes to download the model (~2.5 GB). The model is persisted in a Docker volume so subsequent starts are instant.

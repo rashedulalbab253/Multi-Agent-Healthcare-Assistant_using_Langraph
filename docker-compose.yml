@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  # ---------- Ollama (LLM server) ----------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Pull the medgemma model automatically on first start
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull medgemma && wait"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------- FastAPI App ----------
+  app:
+    build: .
+    container_name: healthcare-assistant
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434   # override to point at the ollama container
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  ollama_data:
