@@ -185,3 +185,9 @@ Go to your GitHub repo → **Settings → Secrets and variables → Actions** an
 ```bash
 docker pull rashedulalbab1234/multi-agent-healthcare-assistant:latest
 ```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
