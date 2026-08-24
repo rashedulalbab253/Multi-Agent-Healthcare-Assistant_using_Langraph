@@ -1,190 +1,277 @@
 # 🏥 Multi-Agent Healthcare Assistant
 
-This project is a modular FastAPI-based application designed to simulate a real-world clinical assistant powered by multiple AI agents. It supports clinical note analysis, medical image interpretation, and structured SOAP note generation — all powered by large language and vision models.
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-FF6F00.svg)](https://github.com/langchain-ai/langgraph)
+[![Ollama](https://img.shields.io/badge/Inference-Ollama%20(MedGemma)-white.svg?logo=ollama)](https://ollama.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/rashedulalbab1234/multi-agent-healthcare-assistant)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+An intelligent clinical assistant system powered by **LangGraph**, **FastAPI**, and **MedGemma** (running locally via Ollama). It coordinates specialized AI agents to extract ICD-10 diagnostic codes, perform multimodal radiology image interpretations, and synthesize structured SOAP notes from clinical encounters.
 
 ![Multi-Agent Medical System](artifacts/multi-agent.png)
+
 ---
 
-## 🚀 Features
+## 📑 Table of Contents
+- [Key Features](#-key-features)
+- [Agentic Architecture](#-agentic-architecture)
+- [Project Structure](#-project-structure)
+- [🎬 Demo](#-demo)
+- [Prerequisites](#-prerequisites)
+- [Quick Start](#-quick-start)
+- [Installation & Setup](#-installation--setup)
+- [Docker Deployment](#-docker-deployment)
+- [CI/CD — GitHub Actions](#-cicd--github-actions)
+- [API Reference](#-api-reference)
+- [Observability & Monitoring](#-observability--monitoring)
+- [License](#-license)
 
-- 🧠 **ICD-10 Code Extraction**  
-  Extracts ICD-10 codes from free-text clinical notes using NLP models.
+---
 
-- 🖼️ **Medical Image Analysis**  
-  Supports analysis of radiology images (X-ray, MRI, etc.) using multimodal models like MedGemma.
+## 🚀 Key Features
 
-- 📋 **SOAP Note Generation**  
-  Generates structured SOAP notes from raw clinical transcripts.
+* 🧠 **Automated ICD-10 Extraction**: Parses free-text clinical transcripts and extracts relevant ICD-10 diagnostic codes along with clinical descriptions.
+* 🖼️ **Multimodal Radiology Analysis**: Interprets medical imaging (X-rays, MRIs, CT scans) using multimodal vision-language models to report technique, findings, impressions, and recommendations.
+* 📋 **Structured SOAP Generation**: Synthesizes Subjective, Objective, Assessment, and Plan (SOAP) clinical documentation from raw patient consultation transcripts.
+* 🔀 **Intelligent Routing**: Employs a supervisor/router agent that dynamically analyzes inputs and dispatches tasks to the appropriate specialized sub-agent.
+* 🔒 **Local & Privacy-Preserving**: Runs LLM inference locally using quantized **MedGemma** models via Ollama to safeguard sensitive clinical data.
 
-- 🧩 **Multi-Agent Architecture**  
-  Built with modular agents for each task, easily extensible and integrated via `agentic_workflow.py`.
+---
 
-- 🔌 **FastAPI Backend**  
-  Exposes an endpoint to upload both clinical text and medical images.
+## 🧩 Agentic Architecture
 
-The user input goes through the router agent. The router agent analyzes the input, and routes the input to either icd10 code generation agent, soap generation agent or image analysis agent.
+The system coordinates agents using a **LangGraph StateGraph**:
 
-All the agents use MedGemma model as the LLM. The LLM is run locally via **Ollama**. In order to reduce the latency and memory usage, a quantized model is used. 
+```
+                  ┌────────────────────────┐
+                  │      User Input        │
+                  │ (Text Note and/or Img) │
+                  └───────────┬────────────┘
+                              │
+                              ▼
+                  ┌────────────────────────┐
+                  │      Router Agent      │
+                  └───────────┬────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   ICD-10 Agent  │  │   SOAP Agent    │  │ Image Analyzer  │
+│ (Codes & Descs) │  │  (S-O-A-P Note) │  │(Radiology Report│
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                    │
+         └────────────────────┼────────────────────┘
+                              ▼
+                  ┌────────────────────────┐
+                  │    Unified Response    │
+                  └────────────────────────┘
+```
 
+![LangGraph Workflow](artifacts/langgraph_workflow.png)
 
-Here is an architecture diagram:
+---
 
-![Workflow Graph](artifacts/langgraph_workflow.png)
+## 📂 Project Structure
+
+```text
+├── app/
+│   ├── agents/                   # Specialized LangGraph agent definitions
+│   │   ├── base_agent.py         # Base agent class
+│   │   ├── router_agent.py       # Intent router (icd10, soap, image_analysis)
+│   │   ├── icd10_agent.py        # ICD-10 extraction agent
+│   │   ├── soap_generator_agent.py # SOAP note generator agent
+│   │   └── image_analyzer_agent.py # Vision/radiology analysis agent
+│   ├── api/                      # FastAPI routes & Pydantic response schemas
+│   │   ├── analyze.py            # POST /api/analyze endpoint
+│   │   └── schemas.py            # Response data models
+│   ├── config/                   # Configuration & environment loader
+│   ├── graph/                    # LangGraph StateGraph & workflow builder
+│   │   ├── graph_builder.py      # Graph composition & routing logic
+│   │   └── types.py              # State definitions
+│   ├── static/                   # Frontend user interface (HTML/CSS/JS)
+│   ├── utils/                    # Model loaders, image processors, and logger
+│   └── main.py                   # FastAPI app entrypoint
+├── evaluations/                  # Synthetic clinical datasets & benchmarks
+├── experiments/                  # Jupyter notebooks for model experiments
+├── artifacts/                    # Architecture diagrams, screenshots, demo media
+├── .github/workflows/            # GitHub Actions CI/CD automation
+├── Dockerfile                    # Container image specification
+├── docker-compose.yml            # Multi-container orchestration (App + Ollama)
+└── requirements.txt              # Project dependencies
+```
 
 ---
 
 ## 🎬 Demo
 
-Watch a quick demo of the Multi-Agent Medical System in action:
+Watch a quick demo of the Multi-Agent Healthcare Assistant in action:
 
-[<video src="artifacts/demo.mp4" controls width="600"></video>
-](https://github.com/user-attachments/assets/d5451b68-ee10-4f70-8876-39fdf3886654)
-
+https://github.com/user-attachments/assets/d5451b68-ee10-4f70-8876-39fdf3886654
 
 ---
 
-## 📊 Monitoring
+## 📋 Prerequisites
 
-
-The app is monitored using LangSmith (optional).
-
-![Langgraph Runs](artifacts/runs.png)
-
----
-## 📝 Requirements
-
-- **OS**: Windows, macOS, or Linux
-- **RAM**: 8 GB minimum (the quantized 4B model uses ~3 GB)
-- **Ollama**: Download from [https://ollama.com](https://ollama.com)
-- **Python**: 3.11+
+* **OS**: Linux, macOS, or Windows
+* **Python**: 3.11+
+* **RAM**: 8 GB minimum (Quantized MedGemma requires ~3 GB VRAM/RAM)
+* **Ollama**: [Download & install Ollama](https://ollama.com)
 
 ---
 
 ## ⚡ Quick Start
 
 ```bash
-# 1. Install Ollama → https://ollama.com
-
-# 2. Pull the model
+# 1. Pull the MedGemma model
 ollama pull medgemma
 
-# 3. Install Python deps
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 4. Run the app
+# 3. Start the application
 uvicorn app.main:app --reload
 
-# 5. Open in browser → http://localhost:8000
+# 4. Open in browser: http://localhost:8000
 ```
 
 ---
 
-## 📦 Installation (Detailed)
+## 📦 Installation & Setup
 
-### 1. Install Ollama
-
-Download and install Ollama from [https://ollama.com](https://ollama.com).
-
-After installation, pull the MedGemma model:
-```bash
-ollama pull medgemma
-```
-
-> **Note:** The model will be automatically downloaded (~2.5 GB) on first use if you skip this step.
-
-### 2. Clone the repo
-
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/rashedulalbab253/Multi-Agent-Healthcare-Assistant_using_Langraph.git
-
+cd Multi-Agent-Healthcare-Assistant_using_Langraph
 ```
 
-### 3. Setup Python environment
+### 2. Setup Python Environment
 ```bash
 python -m venv venv
 
-# Windows:
+# On Windows:
 venv\Scripts\activate
 
-# macOS/Linux:
-# source venv/bin/activate
+# On macOS/Linux:
+source venv/bin/activate
 
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Setup .env file (Optional — for LangSmith monitoring)
-Create a `.env` file in the root directory:
-```bash
+### 3. Configure Environment Variables (Optional)
+To enable **LangSmith** monitoring and custom Ollama endpoints, create a `.env` file in the root directory:
+```env
 LANGCHAIN_TRACING_V2="true"
-LANGCHAIN_ENDPOINT="<your-langsmith-endpoint>"
+LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
 LANGCHAIN_API_KEY="your-langsmith-api-key"
-LANGCHAIN_PROJECT="your-langsmith-project"
+LANGCHAIN_PROJECT="healthcare-assistant"
+OLLAMA_BASE_URL="http://localhost:11434"
 ```
 
-> If you don't need LangSmith monitoring, you can skip this step. The app will work without it.
+> If you don't need LangSmith tracing, you can skip this step. The app runs fully offline by default.
 
-### 5. Start Ollama
-Make sure Ollama is running before starting the app:
+### 4. Run Ollama Server
+Ensure the Ollama service is active:
 ```bash
 ollama serve
 ```
 
-> On Windows, Ollama usually runs as a background service automatically after installation.
-
-### 6. Run the app
+### 5. Launch the Server
 ```bash
 uvicorn app.main:app --reload
 ```
-
-Go to http://localhost:8000 and interact with the app.
+Navigate to `http://localhost:8000` to interact with the application.
 
 ---
 
-## 🐳 Docker
+## 🐳 Docker Deployment
 
-Run everything with a single command using Docker Compose:
+Run the complete multi-agent system and Ollama server with a single command using Docker Compose:
 
 ```bash
 docker-compose up --build
 ```
 
 This will:
-1. Start the **Ollama** container and auto-pull the `medgemma` model
-2. Start the **FastAPI** app container
-3. Expose the app at **http://localhost:8000**
+1. Start the **Ollama** service and automatically pull the `medgemma` model on first launch (persisted in a Docker volume).
+2. Start the **FastAPI** application container once Ollama passes health checks.
+3. Expose the web application at **http://localhost:8000**.
 
-To stop:
+To stop the containers:
 ```bash
 docker-compose down
 ```
-
-> **Note:** The first run will take a few minutes to download the model (~2.5 GB). The model is persisted in a Docker volume so subsequent starts are instant.
 
 ---
 
 ## 🔄 CI/CD — GitHub Actions
 
-Every push to `main` automatically builds the Docker image and pushes it to Docker Hub.
+Every push to `main` automatically triggers a GitHub Actions workflow to build and publish the Docker image to Docker Hub.
 
-**Image:** [`rashedulalbab1234/multi-agent-healthcare-assistant`](https://hub.docker.com/r/rashedulalbab1234/multi-agent-healthcare-assistant)
+* **Image:** [`rashedulalbab1234/multi-agent-healthcare-assistant`](https://hub.docker.com/r/rashedulalbab1234/multi-agent-healthcare-assistant)
 
-### Setup Required Secrets
+### Required Repository Secrets
+Configure the following secrets in **Settings → Secrets and variables → Actions**:
 
-Go to your GitHub repo → **Settings → Secrets and variables → Actions** and add:
-
-| Secret Name | Value |
+| Secret Name | Description |
 |---|---|
-| `DOCKERHUB_USERNAME` | `rashedulalbab1234` |
-| `DOCKERHUB_TOKEN` | Your Docker Hub access token |
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub Access Token |
 
-> To create a Docker Hub access token, go to [Docker Hub → Account Settings → Security → New Access Token](https://hub.docker.com/settings/security).
-
-### Pull the pre-built image
-
+### Pull the Pre-Built Image
 ```bash
 docker pull rashedulalbab1234/multi-agent-healthcare-assistant:latest
 ```
+
+---
+
+## 🔌 API Reference
+
+### `POST /api/analyze`
+Submits clinical notes, medical imagery, or both for automated analysis.
+
+**Form Data Parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `note` | `string` | Optional* | Free-text clinical transcript or encounter note |
+| `image` | `file` | Optional* | Medical image (`.png`, `.jpg`, `.jpeg`) |
+
+*\*At least one of `note` or `image` must be provided.*
+
+#### Example Response (SOAP Agent):
+```json
+{
+  "agent": "soap",
+  "result": {
+    "Subjective": "Patient reports persistent dry cough and mild fever for 3 days...",
+    "Objective": "Vitals: BP 120/80, Temp 100.4F. Lungs clear to auscultation bilaterally...",
+    "Assessment": "Acute upper respiratory tract infection...",
+    "Plan": "Symptomatic treatment with rest, hydration, and OTC antipyretics..."
+  }
+}
+```
+
+#### Example Response (ICD-10 Agent):
+```json
+{
+  "agent": "icd10",
+  "result": [
+    {
+      "code": "J06.9",
+      "description": "Acute upper respiratory infection, unspecified"
+    }
+  ]
+}
+```
+
+---
+
+## 📊 Observability & Monitoring
+
+Agent execution chains, token metrics, and latency are monitored with **LangSmith**:
+
+![LangSmith Tracing](artifacts/runs.png)
 
 ---
 
